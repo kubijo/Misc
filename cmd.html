@@ -1,0 +1,194 @@
+<script>
+    /** @typedef {{ arg: string, label: string, type: 'bool', value?: boolean }} ArgBool */
+    /** @typedef {{ arg: string, label: string, type: 'text', value?: string }} ArgStr */
+    /** @typedef {ArgBool | ArgStr} Arg */
+
+    /**
+     * @param {Object} cfg
+     * @param {string} cfg.base
+     * @param {Array<Arg>} cfg.args
+     * @param {HTMLElement} cfg.mount
+     */
+    function cmd(cfg) {
+        var state = {};
+        function setState(key, value) {
+            state[key] = value;
+            update();
+        }
+
+        /**
+         * @param {ArgBool} arg
+         * @param {number} ind
+         * @return {HTMLLIElement}
+         */
+        function renderChecbox(arg, ind) {
+            var listItem = document.createElement('li');
+            listItem.style.listStyleType = 'none';
+
+            var label = document.createElement('label');
+            listItem.appendChild(label);
+
+            var input = document.createElement('input');
+            input.type = 'checkbox';
+            if (typeof arg.value === 'boolean') input.checked = !!arg.value;
+            input.onchange = function() { setState(String(ind) + arg.arg, this.checked) };
+            label.appendChild(input);
+
+            var span = document.createElement('span');
+            span.innerHTML = arg.label;
+            label.appendChild(span);
+
+            return listItem;
+        }
+
+        /**
+         * @param {ArgStr} arg
+         * @param {number} ind
+         * @return {HTMLLIElement}
+         */
+        function renderInput(arg, ind) {
+            var listItem = document.createElement('li');
+
+            var label = document.createElement('label');
+            listItem.appendChild(label);
+
+            var span = document.createElement('div');
+            span.innerHTML = arg.label;
+            label.appendChild(span);
+
+            var input = document.createElement('input');
+            input.type = 'text';
+            if (arg.value != null) input.value = arg.value;
+            input.onkeyup = function() { setState(String(ind) + arg.arg, this.value); };
+            label.appendChild(input);
+
+            return listItem;
+        }
+
+        var commandWrapper = document.createElement('pre');
+        function init() {
+            var node = document.createElement('ul');
+            cfg.args.forEach(
+                /**
+                 * @param {Arg} arg
+                 * @param {number} ind
+                 */
+                function each(arg, ind) {
+                    if (arg.value!=null) state[String(ind) + arg.arg] = arg.value;
+                    switch (arg.type) {
+                        case 'bool': {
+                            node.appendChild(renderChecbox(arg, ind));
+                            break;
+                        }
+                        case 'text': {
+                            var string = document.createElement('input');
+                            node.appendChild(renderInput(arg, ind));
+                            break;
+                        }
+                        // no default
+                    }
+                }
+            );
+
+            var style = document.createElement('style');
+            style.setAttribute('type', 'text/css');
+            style.innerHTML = `
+                ul {
+                    list-style-type: none;
+                    padding: 0;
+                    margin: 12px 0;
+                }
+                ul li {
+                    line-height: 1.5;
+                    padding: 0;
+                    margin: 0;
+                }
+                ul li input[type="checkbox"] {
+                    margin: 0 8px 0 0;
+                }
+            `;
+
+            cfg.mount.appendChild(style);
+            cfg.mount.appendChild(node);
+            cfg.mount.appendChild(commandWrapper);
+        }
+        init();
+
+        function update() {
+            var txt = [cfg.base];
+            cfg.args.forEach(
+                /**
+                 * @param {Arg} arg
+                 * @param {number} ind
+                 */
+                function each(arg, ind) {
+                    var val = state[String(ind) + arg.arg];
+
+                    switch (arg.type) {
+                        case 'bool': {
+                            if (val) txt.push(arg.arg);
+                            break;
+                        }
+                        case 'text': {
+                            if (arg.arg && val) txt.push(arg.arg, val);
+                            else if (val) txt.push(val);
+                            break;
+                        }
+                        // no default
+                    }
+                }
+            );
+
+            commandWrapper.innerHTML = txt.join(' ');
+        }
+        update();
+    }
+</script>
+
+<div id="e1"></div>
+<script>
+    cmd({
+        mount: document.getElementById('e1'),
+        base: './toolbox',
+        args: [
+            { arg: '--migrate', type: 'bool', value: true, label: 'Migrate current settings' },
+            { arg: '--tuning',  type: 'bool', value: true, label: 'Enable Auto Tuning'       },
+            { arg: null,        type: 'text', value: 'xxx', label: 'IP Address'               },
+            { arg: null,        type: 'text', value: 'yyy', label: 'Another Positional Arg'   },
+        ],
+    })
+</script>
+
+<br><br>
+<hr>
+<br><br>
+
+<div id="e2"></div>
+<script>
+    cmd({
+        mount: document.getElementById('e2'),
+        base: './toolbox',
+        args: [
+            { arg: null,        type: 'text', value: 'xxx', label: 'IP Address'               },
+            { arg: null,        type: 'text', value: 'yyy', label: 'Another Positional Arg'   },
+            { arg: '--migrate', type: 'bool', value: true, label: 'Migrate current settings' },
+            { arg: '--tuning',  type: 'bool', value: true, label: 'Enable Auto Tuning'       },
+        ],
+    })
+</script>
+
+<br><br>
+<hr>
+<br><br>
+
+<div id="e3"></div>
+<script>
+    cmd({
+        mount: document.getElementById('e3'),
+        base: './toolbox',
+        args: [
+            { arg: '--test', type: 'text', value: 'xxx', label: 'Test'  },
+            { arg: null,   type: 'text', label: 'Test2' },
+        ],
+    })
+</script>
